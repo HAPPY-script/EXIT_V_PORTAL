@@ -1,0 +1,95 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local player = Players.LocalPlayer
+
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local ScreenGui = Instance.new("ScreenGui")
+local ExitFrame = Instance.new("Frame")
+local ExitText = Instance.new("TextLabel")
+local ExitButton = Instance.new("TextButton")
+
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+ExitFrame.Size = UDim2.new(0, 200, 0, 100)
+ExitFrame.Position = UDim2.new(1, 0, 0.8, 0)
+ExitFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 255)
+ExitFrame.BackgroundTransparency = 0.3
+ExitFrame.BorderSizePixel = 0
+ExitFrame.Parent = ScreenGui
+
+ExitText.Size = UDim2.new(1, 0, 0.6, 0)
+ExitText.Position = UDim2.new(0, 0, 0, 0)
+ExitText.BackgroundTransparency = 1
+ExitText.Text = "Exit V portal?"
+ExitText.TextColor3 = Color3.fromRGB(255, 255, 255)
+ExitText.Font = Enum.Font.SourceSansBold
+ExitText.TextSize = 18
+ExitText.Parent = ExitFrame
+
+ExitButton.Size = UDim2.new(0.8, 0, 0.3, 0)
+ExitButton.Position = UDim2.new(0.1, 0, 0.65, 0)
+ExitButton.BackgroundColor3 = Color3.fromRGB(0, 255, 255)
+ExitButton.Text = "Exit"
+ExitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+ExitButton.Font = Enum.Font.SourceSansBold
+ExitButton.TextSize = 18
+ExitButton.Parent = ExitFrame
+
+local displayed = false
+
+local function findPortalEye()
+    for _, object in ipairs(workspace:GetDescendants()) do
+        if object:IsA("BasePart") and object.Name == "PortalEye" then
+            return object
+        end
+    end
+    return nil
+end
+
+local function performLungeToPortalEye()
+    local portalEye = findPortalEye()
+    if not portalEye then
+        warn("PortalEye not found!")
+        return
+    end
+
+    local targetPosition = portalEye.Position
+    local lungeSpeed = 300
+    local distance = (humanoidRootPart.Position - targetPosition).Magnitude
+    local duration = distance / lungeSpeed
+    local startTime = tick()
+
+    while tick() - startTime < duration do
+        local step = RunService.Heartbeat:Wait()
+        local direction = (targetPosition - humanoidRootPart.Position).Unit
+        humanoidRootPart.CFrame = humanoidRootPart.CFrame + direction * lungeSpeed * step
+    end
+
+    humanoidRootPart.CFrame = CFrame.new(targetPosition)
+end
+
+local function checkPositionY()
+    if humanoidRootPart.Position.Y > 100000 and not displayed then
+        displayed = true
+        ExitFrame:TweenPosition(UDim2.new(0.75, 0, 0.8, 0), "Out", "Quad", 0.5, true)
+    elseif humanoidRootPart.Position.Y <= 100000 and displayed then
+        displayed = false
+        ExitFrame:TweenPosition(UDim2.new(1, 0, 0.8, 0), "Out", "Quad", 0.5, true, function()
+            ExitFrame.Position = UDim2.new(1, 0, 0.8, 0)
+        end)
+    end
+end
+
+RunService.Heartbeat:Connect(checkPositionY)
+
+ExitButton.MouseButton1Click:Connect(performLungeToPortalEye)
+
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+end)
